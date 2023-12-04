@@ -16,10 +16,9 @@ parse = parse' . dropWhile (/=':')
         ('g':'r':'e':'e':'n':rest') -> col{g=max d (g col)} where col = parse' rest'
         ('b':'l':'u':'e':rest')     -> col{b=max d (b col)} where col = parse' rest'
         _ -> error $ ">"++rest++"<"
-      where
-        xxs = dropWhile (not . isDigit) l -- skip comma, semicolon, space
-        d :: Int = read $ takeWhile isDigit xxs
-        rest = dropWhile (not . isAlpha) xxs -- skip space
+      where -- skip comma, semicolon, space
+        (d',_:rest) = span isDigit $ dropWhile (not . isDigit) l
+        d = read d'
 
 good :: String -> Bool
 good s = r<=12 && g<=13 && b<=14
