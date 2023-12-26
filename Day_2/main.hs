@@ -1,4 +1,3 @@
-import Data.List
 import Data.Char
 
 data Col = Col {r::Int, g::Int, b::Int} deriving Show
