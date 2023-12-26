@@ -34,7 +34,7 @@ lookup1 ((lo ::: hi,d):ms) i
 lookupRange :: SMap -> Range -> [Range]
 lookupRange [] r = [r]
 lookupRange ((lo ::: hi,d):ms) k@(klo ::: khi)
-  | khi < lo  = [klo ::: khi]    -- too far left
+  | khi < lo  = [k]    -- too far left
   | klo >= hi = lookupRange ms k -- too far right
   | khi < hi  = if klo < lo then [klo ::: lo, trans lo khi]
                             else [trans klo khi]
