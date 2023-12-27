@@ -75,14 +75,6 @@ solve pat is = table ! (pl,il)
     toList :: Array Int e -> Int -> [e]
     toList arr i = map (arr !) [i..snd $ bounds arr]
 
-canFit' :: Int -> Pat -> Bool
-canFit' num str = num <= l
-                && notElem '.' a
-                && (num == l || head b /= '#')
-                where
-                    l = length str
-                    (a,b) = splitAt num str
-
 part1 :: IO Int -- Naive is faster on small input lol
 part1 = sum . map (uncurry naive . parseLine . words) . lines <$> readFile "Day_12/input.txt"
 
