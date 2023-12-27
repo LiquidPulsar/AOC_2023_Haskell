@@ -1,10 +1,7 @@
 import Data.Array
-import Debug.Trace
 
 type Pos = (Int,Int) -- y x
 type Board = Array Pos
-
-debug x = traceShow x x
 
 prefixList :: [Int] -> [Int]
 prefixList = scanl1 (+)
