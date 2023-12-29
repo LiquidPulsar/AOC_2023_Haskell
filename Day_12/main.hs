@@ -1,4 +1,6 @@
 import Data.List
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Array
 import Control.Monad
 import Data.Functor
@@ -38,13 +40,14 @@ solve pat is = table ! (pl,il)
     pl = length pat
     il = length is
 
-    parr  = listArray (0,pl-1) pat
+    parr  = T.pack pat
     iarr  = listArray (0,pl-1) is
     table = tabulate ((0,0),(pl,il)) $ uncurry solve'
 
     -- *After* this position (from the end), there are no #s
     pos = fromMaybe pl . fst $ foldr go (Nothing,0) pat
       where
+        {-# INLINE go #-}
         go :: Char -> (Maybe Int, Int) -> (Maybe Int, Int)
         go c (Nothing,n) = (guard (c=='#') $> n,n+1)
         go _ acc = fmap (+1) acc
@@ -55,25 +58,22 @@ solve pat is = table ! (pl,il)
     solve' pi ni 
      = let
         n = iarr ! (il - ni)
-        hash_res = if canFitArr n (pl - pi)
+        hash_res = if canFitArr n pi
                     then table ! (max (pi - n - 1) 0, ni - 1)
                     else 0
         dot_res = table ! (pi-1,ni)
-      in
-        case parr ! (pl - pi) of
+      in case parr `T.index` (pl - pi) of
         '#' -> hash_res
         '.' -> dot_res
         '?' -> hash_res + dot_res
 
+    {-# INLINE canFitArr #-}
     canFitArr :: Int -> Int -> Bool
-    canFitArr n pi = n <= (pl - pi) 
-                   && notElem '.' a 
-                   && (n == (pl - pi) || head b /= '#')
+    canFitArr n pi = n <= pi
+                   && not (T.elem '.' a )
+                   && (n == pi || T.head b /= '#')
       where
-        (a,b) = splitAt n $ toList parr pi
-    
-    toList :: Array Int e -> Int -> [e]
-    toList arr i = map (arr !) [i..snd $ bounds arr]
+        (a,b) = T.splitAt n $ T.takeEnd pi parr
 
 part1 :: IO Int -- Naive is faster on small input lol
 part1 = sum . map (uncurry naive . parseLine . words) . lines <$> readFile "Day_12/input.txt"
