@@ -37,10 +37,10 @@ tabulate idxs f = array idxs (map (\i->(i,f i)) (range idxs))
 solve :: Pat -> [Int] -> Int
 solve pat is = table ! (pl,il)
   where
-    pl = length pat
-    il = length is
-
     parr  = T.pack pat
+    pl = T.length parr
+
+    il = length is
     iarr  = listArray (0,pl-1) is
     table = tabulate ((0,0),(pl,il)) $ uncurry solve'
 
