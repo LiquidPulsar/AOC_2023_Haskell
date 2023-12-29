@@ -29,44 +29,39 @@ rotCW = map T.reverse . T.transpose
 rotCCW :: Rocks -> Rocks
 rotCCW = T.transpose . map T.reverse
 
-shiftLeft :: Rocks -> Rocks
-shiftLeft = map shiftLine
+shiftRight :: Rocks -> Rocks
+shiftRight = map shiftLine
   where
     shiftLine :: Text -> Text
     shiftLine = T.intercalate "#" . map f . T.split ('#'==)
       where
         f :: Text -> Text
-        f txt = T.justifyLeft (T.length txt) '.' $ T.filter ('O'==) txt
+        f = uncurry (flip (<>)) . T.partition ('O'==)
 
-loadLine :: Text -> Int
-loadLine = snd . T.foldr accum (1,0)
-  where
-    accum :: Char -> (Int, Int) -> (Int, Int)
-    accum 'O' (i,t) = (i+1,t+i)
-    accum _ (i,t) = (i+1,t)
+loadLine :: Int -> Text -> Int
+loadLine i = (i*) . T.count "O"
 
 load :: Rocks -> Int
-load = sum . map loadLine
+load = snd . foldr (\x (i,tot) -> (i+1, tot + loadLine i x)) (1,0)
 
 cyc :: Rocks -> Rocks
-cyc = (!!4) . iterate (rotCW . shiftLeft)
+cyc = (!!4) . iterate (shiftRight . rotCW)
 
 printB :: Rocks -> IO ()
-printB = mapM_ (putStrLn . T.unpack) . rotCW
+printB = mapM_ (putStrLn . T.unpack)
 
 getRocks :: IO Rocks
-getRocks = rotCCW . Prelude.map T.pack . lines <$> readFile "Day_14/input.txt"
+getRocks = map T.pack . lines <$> readFile "Day_14/input.txt"
 
 -- Rotate CCW at the start so any load calcs are done left instead of up
 part1 :: IO Int
-part1 = load . shiftLeft <$> getRocks
+part1 = load . rotCCW . shiftRight . rotCW <$> getRocks
+
+simul :: Int -> Rocks -> Cached Int
+simul i rs = getCacheR rs >>= act
+  where
+    act (Just s) = getCacheI $ s + (1000000000 - i) `mod` (i - s) 
+    act Nothing  = putCache rs i >> simul (i+1) (cyc rs)
 
 part2 :: IO Int
 part2 = evalWithCache . simul 0 <$> getRocks
-  where
-    simul :: Int -> Rocks -> Cached Int
-    simul i rs = do
-      curr <- getCacheR rs
-      case curr of
-        Just s  -> getCacheI $ s + (1000000000 - i) `mod` (i - s) 
-        Nothing -> putCache rs i >> simul (i+1) (cyc rs)
