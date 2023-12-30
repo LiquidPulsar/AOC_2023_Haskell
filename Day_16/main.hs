@@ -7,13 +7,16 @@ import qualified Data.Set as S
 import Debug.Trace
 import Data.Maybe
 import Control.Monad
+import Data.Map (Map)
+import qualified Data.Map as M
 
 debug x = traceShow x x
 
-data Dir = U | R | D | L deriving (Show, Eq, Ord)
+data Dir = U | R | D | L deriving (Show, Eq, Ord, Ix)
 type Pos = (Int,Int) -- y x
 type State = (Pos,Dir)
 type Board = Array Pos Char
+type ReachMap = Map State (Set Pos)
 
 m :: Dir -> Pos -> Pos
 m U = first (subtract 1)
@@ -83,6 +86,36 @@ Map of State -> coords reachable from said state
 Utilise max laziness and define an array??
 
 -}
+
+part2 :: IO Int
+part2 = do
+    txt <- readFile "Day_16/input.txt"
+    let board = makeArray txt
+        (_,(h,w)) = bounds board
+        seen = dfsCoords board ((0,0),R)
+        starts = [((y,i),d) | i <- [0..w], (y,d) <- [(0,D),(h,U)]] ++
+                 [((i,x),d) | i <- [0..h], (x,d) <- [(0,R),(w,L)]]
+    return . maximum . map (length . dfsCoords board) $ starts
+
+    --     reachable :: Array State (Set Pos)
+    --     reachable = tabulate ((l,U),(h,L)) (
+    --       foldr (S.union . (reachable !)) S.empty . step board)
+        
+
+    --     reachMap :: ReachMap
+    --     reachMap = foldr research M.empty $ range ((l,U),(h,L))
+    --       where
+    --         research :: State -> ReachMap -> ReachMap
+    --         research st m
+    --          | st `M.member` m = undefined
+    --          | otherwise       = undefined
+
+    --         further :: State -> ReachMap -> ReachMap
+    --         further st m
+    --          | st `M.member` m = undefined
+    --          | otherwise       = undefined
+    -- print reachable
+    -- return $ length seen
 
 -- part1 :: IO Int
 -- part1 = do
