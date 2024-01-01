@@ -3,20 +3,16 @@ import Control.Arrow
 import Data.Functor
 import Data.Set (Set)
 import qualified Data.Set as S
-
-import Debug.Trace
 import Data.Maybe
 import Control.Monad
 import Data.Map (Map)
 import qualified Data.Map as M
 
-debug x = traceShow x x
-
 data Dir = U | R | D | L deriving (Show, Eq, Ord, Ix)
 type Pos = (Int,Int) -- y x
 type State = (Pos,Dir)
 type Board = Array Pos Char
-type ReachMap = Map State (Set Pos)
+-- type ReachMap = Map State (Set Pos)
 
 m :: Dir -> Pos -> Pos
 m U = first (subtract 1)
