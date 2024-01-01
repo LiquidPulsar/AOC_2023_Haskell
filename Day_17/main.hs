@@ -14,25 +14,27 @@ type State = (Pos,Dir,Int)
 type Board = Array Pos Int
 type Ss = [State]
 
+{-# INLINE nxt #-}
 nxt :: Dir -> Dir
 nxt L = U
 nxt x = succ x
 
+{-# INLINE prv #-}
 prv :: Dir -> Dir
 prv U = L
 prv x = pred x
 
 data MoveList = ML {
-    curr :: Ss,
-    p1 :: Ss,
-    p2 :: Ss,
-    p3 :: Ss,
-    p4 :: Ss,
-    p5 :: Ss,
-    p6 :: Ss,
-    p7 :: Ss,
-    p8 :: Ss,
-    p9 :: Ss
+    curr :: !Ss,
+    p1   :: !Ss,
+    p2   :: !Ss,
+    p3   :: !Ss,
+    p4   :: !Ss,
+    p5   :: !Ss,
+    p6   :: !Ss,
+    p7   :: !Ss,
+    p8   :: !Ss,
+    p9   :: !Ss
 } deriving Show
 
 empty :: MoveList
@@ -79,7 +81,7 @@ move hi b (p,d,i) = guard valid $> (p',d,i+1)
 
 {-# INLINE turn #-}
 turn :: Int -> Int -> Board -> State -> Maybe State
-turn lo hi b (p,d,i) = guard (i>=lo) >> move hi b (p,d,0) -- guard (i>=3) >> 
+turn lo hi b (p,d,i) = guard (i>=lo) >> move hi b (p,d,0)
 
 {-# INLINE turns #-}
 turns :: Int -> Int -> Board -> State -> [Maybe State]
