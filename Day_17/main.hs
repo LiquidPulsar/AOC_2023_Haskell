@@ -38,6 +38,7 @@ data MoveList = ML {
 empty :: MoveList
 empty = ML [] [] [] [] [] [] [] [] [] []
 
+{-# INLINE add #-}
 add :: MoveList -> Int -> State -> MoveList
 add ml 0 st = ml{curr = st:curr ml}
 add ml 1 st = ml{p1 = st:p1 ml}
@@ -50,6 +51,7 @@ add ml 7 st = ml{p7 = st:p7 ml}
 add ml 8 st = ml{p8 = st:p8 ml}
 add ml 9 st = ml{p9 = st:p9 ml}
 
+{-# INLINE shift #-}
 shift :: MoveList -> MoveList
 shift (ML _ a b c d e f g h i) = ML a b c d e f g h i []
 
@@ -61,21 +63,25 @@ makeArray txt = listArray ends . map (read . pure) $ concat ls
     h = length ls
     ends = ((0,0),(h-1,w-1))
 
+{-# INLINE m #-}
 m :: Dir -> Pos -> Pos
 m U = first (subtract 1)
 m D = first (+1)
 m L = fmap (subtract 1)
 m R = fmap (+1)
 
+{-# INLINE move #-}
 move :: Int -> Board -> State -> Maybe State
 move hi b (p,d,i) = guard valid $> (p',d,i+1)
   where
     p' = m d p
     valid = inRange (bounds b) p' && i < hi
 
+{-# INLINE turn #-}
 turn :: Int -> Int -> Board -> State -> Maybe State
 turn lo hi b (p,d,i) = guard (i>=lo) >> move hi b (p,d,0) -- guard (i>=3) >> 
 
+{-# INLINE turns #-}
 turns :: Int -> Int -> Board -> State -> [Maybe State]
 turns lo hi b (p,d,i) = map (turn lo hi b . (p,,i)) [nxt d, prv d]
 
