@@ -1,5 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
-
 import Data.Array
 import Control.Arrow
 import Control.Monad
@@ -92,8 +90,8 @@ search :: Int -> Int -> Board -> Set State -> Int -> MoveList -> Int
 search lo hi b = go
   where
     go _ i (ML [] [] [] [] [] [] [] [] [] []) = error "AAAA"
-    go c i ml@(curr -> []) = go c (i + 1) $ shift ml
-    go c i ml@(curr -> (h@(p,d,l):t))
+    go c i ml@ML{curr=[]} = go c (i + 1) $ shift ml
+    go c i ml@ML{curr=(h@(p,d,l):t)}
      | S.member h c        = go c i ml{curr=t}
      | p == snd (bounds b) = i + b ! p
      | otherwise           = go (S.insert h c) i ml'
