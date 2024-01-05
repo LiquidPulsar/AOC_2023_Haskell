@@ -55,6 +55,7 @@ parseCard 'J' = JACK
 parseCard 'Q' = QUEEN
 parseCard 'K' = KING
 parseCard 'A' = ACE
+parseCard c = error $ "Couldn't parse " ++ c : " as a card" 
 
 parseCards :: String -> (Cards,Bet)
 parseCards = (map parseCard *** read) . break (== ' ')
