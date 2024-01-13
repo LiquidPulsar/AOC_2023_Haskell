@@ -14,7 +14,7 @@ import Control.Monad.Trans.State
 import Data.Sequence (Seq)
 import qualified Data.Sequence as Se
 
-import Debug.Trace
+-- import Debug.Trace
 -- debug = join traceShow
 
 
@@ -49,17 +49,17 @@ updateMods n = modify . first . M.insert n
 
 process :: Counts -> ModState Counts
 process is = popLeft >>= maybe (pure is) process'
- where
-  process' :: (Signal, ModName, ModName) -> ModState Counts
-  process' (sig, m, from) = maybe next (go sig from m) . (M.!? m) =<< getMods
-    where
-      go :: Signal -> ModName -> ModName -> Module -> ModState Counts
-      go sig from name me = updateMods name nmod >> extendRight (map (nsig,,name) nmes) >> next
-        where (nmod, nsig, nmes) = send me sig from
-      next = process $ update is sig
-      -- !_ = trace (from ++ " -" ++ sName sig ++ "-> " ++ m) 0
-  update (a,b) False = (a+1,b)
-  update (a,b) True = (a,b+1)
+  where
+    process' :: (Signal, ModName, ModName) -> ModState Counts
+    process' (sig, name, from) = maybe next go . (M.!? name) =<< getMods
+      where
+        go :: Module -> ModState Counts
+        go me = updateMods name nmod >> extendRight (map (nsig,,name) nmes) >> next
+          where (nmod, nsig, nmes) = send me sig from
+        next = process $ update is sig
+        -- !_ = trace (from ++ " -" ++ sName sig ++ "-> " ++ m) 0
+    update (a,b) False = (a+1,b)
+    update (a,b) True = (a,b+1)
 
 loopProg :: Int -> Counts -> Modules -> Counts
 loopProg 0 cs _ = cs
@@ -77,11 +77,21 @@ send (Conj ins outs) sig name = (Conj ins' outs, not . and $ M.elems ins', outs)
 send mod@(Broad os) sig _ = (mod,sig,os)
 
 parseLine :: String -> Modules -> Modules
-parseLine line mods = foldr (\target acc -> updateMap acc name target) (M.insert name mod mods) outs
+parseLine line mods = foldr (\target acc -> updateMap acc name target) (insertMod mod) outs
   where
     [l,r] = T.splitOn " -> " $ pack line
     outs = map unpack $ T.splitOn ", " r
     (name, mod) = parse $ unpack l
+
+    {-
+      Dealing with dummy from below.
+      Only care if we insert a conj over a dummy, otherwise a normal insert
+    -}
+    insertMod :: Module -> Modules
+    insertMod (Conj _ os) = case mods M.!? name of
+      Just (Conj is []) -> M.insert name (Conj is os) mods
+      _ -> M.insert name mod mods
+    insertMod _ = M.insert name mod mods
 
     parse :: ModName -> (ModName, Module)
     parse l@('b':_) = (l, Broad outs)
@@ -90,9 +100,16 @@ parseLine line mods = foldr (\target acc -> updateMap acc name target) (M.insert
     parse [] = error "Empty line"
     parse (c:_) = error $ "Invalid first char" ++ [c]
 
+    {-
+      If the target doesn't exist yet, we make a dummy Conj. 
+      This will only ever manually get replaced once: 
+        - With a different type in which case we don't care
+        - With a Conj in which case it'll take the in list from the dummy
+    -}
     updateMap :: Modules -> ModName -> ModName -> Modules
     updateMap mods src target = case mods M.!? target of
       Just (Conj is os) -> M.insert target (Conj (M.insert src False is) os) mods
+      Nothing -> M.insert target (Conj (M.singleton src False) []) mods
       _ -> mods
 
 
