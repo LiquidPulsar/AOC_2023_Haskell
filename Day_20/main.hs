@@ -57,17 +57,16 @@ process is = popLeft >>= maybe (pure is) process'
         go me = updateMods name nmod >> extendRight (map (nsig,,name) nmes) >> next
           where (nmod, nsig, nmes) = send me sig from
         next = process $ update is sig
-        -- !_ = trace (from ++ " -" ++ sName sig ++ "-> " ++ m) 0
+        -- !_ = trace (from ++ " -" ++ (if sig then "high" else "low") ++ "-> " ++ m) 0
     update (a,b) False = (a+1,b)
     update (a,b) True = (a,b+1)
 
-loopProg :: Int -> Counts -> Modules -> Counts
-loopProg 0 cs _ = cs
-loopProg i cs mods = loopProg (i-1) cs' mods'
+runSignal :: (Counts, Modules) -> (Counts, Modules)
+runSignal (cs,mods) = (cs',mods')
   where (cs',(mods',Se.Empty)) = runState (process cs) (mods, Se.singleton (False, "broadcaster", "button"))
 
-sName False = "low"
-sName True  = "high"
+loopProg :: Int -> Counts -> Modules -> Counts
+loopProg i cs mods = fst $ iterate runSignal (cs,mods) !! i
 
 send :: Module -> Signal -> ModName -> (Module,Signal,[ModName])
 send mod@(Flip _ _) True _ = (mod, True, [])
