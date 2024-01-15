@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TupleSections #-}
 
 import Data.Text (Text, pack, unpack)
@@ -13,9 +12,6 @@ import Control.Monad.Trans.State
 
 import Data.Sequence (Seq)
 import qualified Data.Sequence as Se
-
-import Debug.Trace
-debug x = traceShow x x
 
 
 type Signal  = Bool -- True = High
@@ -62,7 +58,6 @@ process is = popLeft >>= maybe (pure is) process'
         go me = updateMods name nmod >> extendRight (map (nsig,,name) nmes) >> next
           where (nmod, nsig, nmes) = send me sig from
         next = process $ update is sig
-        -- !_ = trace (from ++ " -" ++ (if sig then "high" else "low") ++ "-> " ++ name) 0
     update (a,b) False = (a+1,b)
     update (a,b) True = (a,b+1)
 
@@ -78,7 +73,6 @@ send (Flip saved os) False _ = (Flip (not saved) os, not saved, os)
 -- AND the signal with the old one so we can see if any falses were found
 send (Conj old ins outs) sig name = (Conj (sig && old) ins' outs, not . and $ M.elems ins', outs)
   where ins' = M.insert name sig ins
-        -- !_ = debug (ins, sig)
 send mod@(Broad os) sig _ = (mod,sig,os)
 
 parseLine :: String -> Modules -> Modules
@@ -121,36 +115,26 @@ parseLine line mods = foldr (updateMap name) (insertMod mod) outs
 part1 :: IO Int
 part1 = uncurry (*) . loopProg 1000 (0,0) . foldr parseLine M.empty . lines <$> readFile "Day_20/input.txt"
 
-resetConjs :: Modules -> Modules
-resetConjs = M.map f
+findTime :: Modules -> Int
+findTime mods = go mods M.empty 1
   where
-    f (Conj _  is os) = Conj True is os
-    f x = x
+    counters = M.keys $ M.filter (elem "vr" . outs) mods -- vr alone points to rx directly
+    n = length counters
+    go ms cs i
+      | M.size cs == n = foldr1 lcm $ M.elems cs
+      | otherwise      = go (resetConjs ms') cs' (i+1)
+      where
+        (_,ms') = runSignal ((0,0),ms)
+        cs' = foldr (`M.insert`i) cs . M.keys . M.filterWithKey (\k v -> k `elem` counters && isOn v) $ ms'
+    
+    isOn (Conj s _ _) = not s
+    isOn _ = False
+
+    resetConjs :: Modules -> Modules
+    resetConjs = M.map f
+      where
+        f (Conj _  is os) = Conj True is os
+        f x = x
 
 part2 :: IO Int
-part2 = do
-  mods <- foldr parseLine M.empty . lines <$> readFile "Day_20/input.txt"
-  let counters = M.keys $ M.filter (elem "vr" . outs) mods -- vr alone points to rx directly
-      n = length counters
-      go ms cs i
-        | M.size cs == n = foldr1 lcm $ M.elems cs
-        | otherwise      = go ms'' cs' (i+1)
-        where
-          (_,ms') = runSignal ((0,0),ms)
-          ms'' = resetConjs ms'
-          cs' = foldr (`M.insert`i) cs . M.keys . M.filterWithKey (\k v -> k `elem` counters && isOn v) $ ms'
-          -- !_ = debug (i, cs') -- , map (ms !) counters)
-      
-      isOn (Conj s _ _) = not s
-      isOn _ = False
-
-  -- print counters
-  -- print $ map (mods !) counters
-  return $ go mods M.empty 1
-
-{-
-mb - ds
-cl - dt
-dr - cs
-tn - bd
--}
+part2 = findTime . foldr parseLine M.empty . lines <$> readFile "Day_20/input.txt"
